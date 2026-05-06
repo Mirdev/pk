@@ -1,0 +1,36 @@
+# =========================
+# Python / Jupyter 관련
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints/
+
+# =========================
+# 가상환경 (Virtual Environments)
+# =========================
+venv/
+env/
+.env
+
+# =========================
+# IDE 및 운영체제 관련
+# =========================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# =========================
+# 프로젝트에서 생성되는 로컬 로그 및 데이터
+# =========================
+# 새로 추가한 대시보드 로깅 폴더 및 파일 추적 제외
+logs/
+*.jsonl
+*.log
+interface/index.html
+
+# LUT Cache Data
+data/feedback_lut_4.npy
+
+deploy.sh

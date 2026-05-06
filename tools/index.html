@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Ray Lee's Universal PK Command OS</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        .pk-wrapper { max-width: 1100px; margin: 0 auto; font-family: 'Pretendard', sans-serif; padding: 20px; }
+        .doc-header { border-bottom: 3px solid #0f172a; margin-bottom: 30px; }
+        .grid { display: grid; grid-template-columns: 380px 1fr; gap: 25px; }
+        .card { background: white; padding: 25px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .math-section { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; }
+        button { background: #2563eb; color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
+        button:hover { background: #1e40af; }
+        .chart-area { height: 450px; }
+    </style>
+</head>
+<body>
+<div class="pk-wrapper">
+    <header class="doc-header">
+        <h1>💊 Universal PK Simulation Engine</h1>
+        <p>Expert Guide: <strong>Ray Lee</strong> | Institution: <strong>ellslab</strong></p>
+    </header>
+
+    <div class="grid">
+        <div class="card">
+            <h3>⚙️ Parameters</h3>
+            
+            <label>PK Model Architecture</label>
+            <select id="model_type" onchange="updateUI()">
+                <option value="1-comp-iv-infusion">Vancomycin (IV Infusion)</option>
+                <option value="1-comp-iv-bolus">Aminoglycosides (IV Bolus)</option>
+                <option value="phenytoin-iv">Phenytoin (Non-linear IV)</option>
+                <option value="phenytoin-capsule">Phenytoin (Non-linear Capsule)</option>
+            </select>
+
+            <div class="math-section" id="math_desc">
+                $$ \frac{dC}{dt} = \frac{Rate}{V_d} - \frac{V_{max} \cdot C}{V_d(K_m + C)} $$
+            </div>
+
+            <div id="fields">
+                <label>Weight (kg)</label><input type="number" id="weight" value="67.4">
+                <label>Dose (mg)</label><input type="number" id="dose" value="300">
+                <label>Interval (τ, hr)</label><input type="number" id="tau" value="24">
+                <label id="tinf_label">Infusion Time (t_inf, hr)</label><input type="number" id="tinf" value="1">
+                <label id="thalf_field">Half-life (t1/2, hr)</label><input type="number" id="thalf" value="24">
+                <label>Doses (#)</label><input type="number" id="num_doses" value="14">
+            </div>
+            <button onclick="runEngine()">🚀 Execute Solver</button>
+        </div>
+
+        <div class="card">
+            <div class="chart-area"><canvas id="pkChart"></canvas></div>
+            <div id="metrics" style="margin-top:20px; display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let chart = null;
+
+    function updateUI() {
+        const type = document.getElementById('model_type').value;
+        const isPheny = type.includes('phenytoin');
+        document.getElementById('thalf').style.display = isPheny ? 'none' : 'block';
+        document.getElementById('thalf_field').style.display = isPheny ? 'none' : 'block';
+        document.getElementById('tinf').style.display = type === '1-comp-iv-bolus' ? 'none' : 'block';
+        document.getElementById('tinf_label').style.display = type === '1-comp-iv-bolus' ? 'none' : 'block';
+    }
+
+    async function runEngine() {
+        const payload = {
+            model_type: document.getElementById('model_type').value,
+            weight: parseFloat(document.getElementById('weight').value),
+            dose: parseFloat(document.getElementById('dose').value),
+            tau: parseFloat(document.getElementById('tau').value),
+            tinf: parseFloat(document.getElementById('tinf').value),
+            thalf: parseFloat(document.getElementById('thalf').value),
+            num_doses: parseInt(document.getElementById('num_doses').value)
+        };
+
+        const response = await fetch('/api/pk/simulate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const res = await response.json();
+        if(res.status === 'success') render(res.data);
+    }
+
+    function render(data) {
+        const ctx = document.getElementById('pkChart').getContext('2d');
+        if(chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.chart_data.time,
+                datasets: [
+                    {label: 'Conc (mcg/mL)', data: data.chart_data.conc, borderColor: '#2563eb', fill: true, pointRadius: 0},
+                    {label: 'Trough Trace', data: data.chart_data.trough, borderColor: '#10b981', borderDash: [5,5], spanGaps: true}
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+
+        const m = data.metrics;
+        document.getElementById('metrics').innerHTML = `
+            <div class="card"><strong>Vd:</strong> ${m.vd} L</div>
+            <div class="card"><strong style="color:red">Peak:</strong> ${m.final_peak}</div>
+            <div class="card"><strong style="color:green">Trough:</strong> ${m.final_trough}</div>
+        `;
+    }
+</script>
+</body>
+</html>

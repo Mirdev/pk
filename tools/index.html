@@ -2,73 +2,243 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Ray Lee's Universal PK Command OS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universal PK Simulator & 위드마크 계산기 | ellslab</title>
+
+    <meta name="description" content="음주운전 처벌 기준 회피 불가. 혈중 알콜 농도(BAC) 계산기 및 위드마크 공식 기반 술 깨는 시간, 알콜 분해 시간 예측. 임상 전문가용 약동학(PK) 시뮬레이터 동시 제공.">
+    <meta name="keywords" content="혈중 알콜 농도, 술 깨는 시간, 알콜 분해 시간, 음주운전 처벌 기준, 위드마크 공식, 약동학 계산기, PK Simulator, TDM, 반코마이신, 페니토인, ellslab">
+    <meta name="author" content="Ray Lee">
+    <meta name="robots" content="index, follow">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        MathJax = { tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] } };
+    </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
     <style>
-        .pk-wrapper { max-width: 1100px; margin: 0 auto; font-family: 'Pretendard', sans-serif; padding: 20px; }
-        .doc-header { border-bottom: 3px solid #0f172a; margin-bottom: 30px; }
-        .grid { display: grid; grid-template-columns: 380px 1fr; gap: 25px; }
-        .card { background: white; padding: 25px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        .math-section { background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; }
-        button { background: #2563eb; color: white; font-weight: bold; cursor: pointer; border: none; transition: 0.3s; }
-        button:hover { background: #1e40af; }
-        .chart-area { height: 450px; }
+        body { background-color: #f8fafc; margin: 0; padding: 20px; }
+        .pk-wrapper { max-width: 1200px; margin: 0 auto; font-family: 'Pretendard', 'Malgun Gothic', sans-serif; color: #333; line-height: 1.6; }
+        .doc-header { border-bottom: 3px solid #0f172a; margin-bottom: 30px; padding-bottom: 10px; }
+        .doc-header h1 { font-size: 2rem; color: #0f172a; margin: 0 0 10px 0; }
+        .doc-meta { font-size: 14px; color: #475569; }
+        
+        /* 🚨 최상단 강력 경고문 스타일 */
+        .mega-alert { background-color: #000000; border: 3px solid #ef4444; padding: 25px; margin-bottom: 30px; color: #ffffff; font-size: 15px; line-height: 1.8; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(239, 68, 68, 0.4); text-align: center; }
+        .mega-alert strong { color: #ef4444; font-size: 1.4rem; display: block; margin-bottom: 12px; }
+        
+        .grid { display: grid; grid-template-columns: 380px 1fr; gap: 25px; align-items: start; }
+        .card { background: white; padding: 25px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .card h3 { margin-top: 0; color: #1e293b; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; font-size: 1.3rem; }
+        
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            .doc-header h1 { font-size: 1.5rem; }
+            body { padding: 10px; }
+        }
+
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 600; color: #334155; margin-bottom: 5px; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; box-sizing: border-box; text-align: right; transition: border-color 0.2s; }
+        input:focus, select:focus { border-color: #2563eb; outline: none; }
+        button.btn-execute { width: 100%; padding: 15px; background: #2563eb; color: white; font-weight: bold; cursor: pointer; border: none; border-radius: 8px; font-size: 16px; margin-top: 10px; transition: 0.2s; }
+        button.btn-execute:hover { background: #1e40af; }
+        button.btn-dark { background: #0f172a; }
+        button.btn-dark:hover { background: #1e293b; }
+
+        .chart-area { height: 450px; position: relative; width: 100%; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-top: 20px; }
+        .metric-box { background: #f8fafc; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }
+        .metric-box span { display: block; font-size: 13px; color: #64748b; margin-bottom: 5px; }
+        .metric-box strong { font-size: 20px; color: #0f172a; }
+
+        @media (max-width: 600px) { .metrics-grid { grid-template-columns: 1fr; } }
+
+        .academic-doc { margin-top: 50px; background: white; padding: 30px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .academic-doc h2 { color: #0f172a; font-size: 1.6rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 40px; }
+        .academic-doc h3 { color: #2563eb; margin-top: 30px; font-size: 1.2rem; }
+        .academic-doc p { font-size: 15px; color: #475569; line-height: 1.8; text-align: justify; }
+        .math-block { background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; overflow-x: auto; border-left: 4px solid #3b82f6; }
+        
+        .widmark-result { display: none; margin-top: 20px; border-top: 2px dashed #cbd5e1; padding-top: 20px; }
+        .widmark-item { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 16px; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; align-items: center; }
+        .widmark-val { font-weight: bold; font-size: 18px; color: #ef4444; }
+
+        .reference-section { margin-top: 50px; background: #f1f5f9; padding: 30px; border-radius: 12px; }
+        .reference-section h3 { margin-top: 0; color: #334155; font-size: 1.3rem; }
+        .reference-section ol { padding-left: 20px; color: #475569; font-size: 14.5px; line-height: 1.7; margin: 0; }
     </style>
 </head>
 <body>
+
 <div class="pk-wrapper">
     <header class="doc-header">
-        <h1>💊 Universal PK Simulation Engine</h1>
-        <p>Expert Guide: <strong>Ray Lee</strong> | Institution: <strong>ellslab</strong></p>
+        <h1>Universal PK Simulation Engine</h1>
+        <div class="doc-meta">
+            Expert Guide: <strong>Ray Lee</strong> | Institution: <strong>ellslab</strong>
+        </div>
     </header>
 
     <div class="grid">
         <div class="card">
-            <h3>⚙️ Parameters</h3>
+            <h3>Parameters & Variables</h3>
             
-            <label>PK Model Architecture</label>
-            <select id="model_type" onchange="updateUI()">
-                <option value="1-comp-iv-infusion">Vancomycin (IV Infusion)</option>
-                <option value="1-comp-iv-bolus">Aminoglycosides (IV Bolus)</option>
-                <option value="phenytoin-iv">Phenytoin (Non-linear IV)</option>
-                <option value="phenytoin-capsule">Phenytoin (Non-linear Capsule)</option>
-            </select>
-
-            <div class="math-section" id="math_desc">
-                $$ \frac{dC}{dt} = \frac{Rate}{V_d} - \frac{V_{max} \cdot C}{V_d(K_m + C)} $$
+            <div class="input-group">
+                <label>PK Model Architecture</label>
+                <select id="model_type" onchange="updateUI()">
+                    <option value="1-comp-iv-infusion">1차 모델: Vancomycin (IV Infusion)</option>
+                    <option value="1-comp-iv-bolus">1차 모델: Aminoglycosides (IV Bolus)</option>
+                    <option value="phenytoin-iv">비선형 모델: Phenytoin (IV)</option>
+                    <option value="phenytoin-capsule">비선형 모델: Phenytoin (Oral Capsule)</option>
+                    <option value="2-comp-iv">2차 모델: Digoxin (2-Comp IV)</option>
+                    <option value="0-order-elim">0차 모델: Ethanol (Oral)</option>
+                </select>
             </div>
 
-            <div id="fields">
-                <label>Weight (kg)</label><input type="number" id="weight" value="67.4">
-                <label>Dose (mg)</label><input type="number" id="dose" value="300">
-                <label>Interval (τ, hr)</label><input type="number" id="tau" value="24">
-                <label id="tinf_label">Infusion Time (t_inf, hr)</label><input type="number" id="tinf" value="1">
-                <label id="thalf_field">Half-life (t1/2, hr)</label><input type="number" id="thalf" value="24">
-                <label>Doses (#)</label><input type="number" id="num_doses" value="14">
+            <div class="input-group"><label>Weight (체중, kg)</label><input type="number" id="weight" step="0.1" value="67.4"></div>
+            <div class="input-group"><label>Dose (투여 용량, mg)</label><input type="number" id="dose" value="1000"></div>
+            <div class="input-group"><label>Interval (투여 간격 τ, hr)</label><input type="number" id="tau" value="12"></div>
+            
+            <div class="input-group" id="group_tinf">
+                <label>Infusion Time (점적 시간, hr)</label><input type="number" id="tinf" value="1">
             </div>
-            <button onclick="runEngine()">🚀 Execute Solver</button>
+            
+            <div class="input-group" id="group_thalf">
+                <label>Half-life (반감기 t1/2, hr)</label><input type="number" id="thalf" step="0.1" value="7.5">
+            </div>
+            
+            <div class="input-group"><label>Number of Doses (투여 횟수)</label><input type="number" id="num_doses" value="7"></div>
+            
+            <button class="btn-execute" onclick="runEngine()">Execute ODE Solver</button>
         </div>
 
-        <div class="card">
-            <div class="chart-area"><canvas id="pkChart"></canvas></div>
-            <div id="metrics" style="margin-top:20px; display:grid; grid-template-columns: repeat(3, 1fr); gap:15px;"></div>
+        <div>
+            <div class="card" style="margin-bottom: 25px;">
+                <h3>Pharmacokinetic Trajectory</h3>
+                <div class="chart-area"><canvas id="pkChart"></canvas></div>
+                
+                <div class="metrics-grid" id="metrics">
+                    <div class="metric-box"><span>Volume of Distribution</span><strong>-</strong></div>
+                    <div class="metric-box"><span>Final Peak</span><strong>-</strong></div>
+                    <div class="metric-box"><span>Final Trough</span><strong>-</strong></div>
+                </div>
+            </div>
+    <div class="mega-alert">
+        <strong>🚨 [경고] 본 계산기는 어떠한 법적 증거 효력도 갖지 않습니다. 🚨</strong>
+        본 시뮬레이터에서 도출되는 <strong>혈중 알콜 농도</strong> 및 <strong>술 깨는 시간</strong> 결과는 평균값을 가정한 단순 추정치에 불과합니다. 실제 <strong>알콜 분해 시간</strong>은 체질과 당일의 컨디션에 따라 극심한 편차가 존재합니다. 이를 <strong>음주운전 처벌 기준</strong>을 교묘히 피하기 위한 시점 판단이나 형사적 수사 방어 논리로 절대 사용할 수 없으며, 모든 책임은 전적으로 사용자 본인에게 있습니다. 단 한 잔이라도 마셨다면 운전대를 잡지 마십시오.
+    </div>
+
+            <div class="card" style="border: 2px solid #0f172a;">
+                <h3 style="color: #0f172a; border-bottom: 2px solid #0f172a;">혈중 알콜 농도(BAC) 및 위드마크 계산기</h3>
+                <p style="font-size: 13.5px; color: #64748b; margin-bottom: 20px;">먹자마자 100% 흡수된다고 가정하는 '단순 위드마크 곡선'과 실제 위장관 흡수 지연시간(Absorption delay)이 반영된 '0차 속도론 궤적'을 비교 시각화합니다.</p>
+                
+                <div class="grid" style="grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div class="input-group">
+                        <label>성별</label>
+                        <select id="w_gender">
+                            <option value="M">남성</option>
+                            <option value="F">여성</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>체중 (kg)</label>
+                        <input type="number" id="w_weight" value="70">
+                    </div>
+                    <div class="input-group">
+                        <label>주류 용량 (mL)</label>
+                        <input type="number" id="w_vol" value="360" placeholder="소주 1병 = 360">
+                    </div>
+                    <div class="input-group">
+                        <label>알코올 도수 (%)</label>
+                        <input type="number" id="w_abv" step="0.1" value="16.5" placeholder="참이슬 = 16.5">
+                    </div>
+                </div>
+                
+                <button class="btn-execute btn-dark" style="margin-bottom: 20px;" onclick="calculateWidmark()">술 깨는 시간 및 분해 궤적 계산</button>
+
+                <div id="widmark-result" class="widmark-result">
+                    <div class="chart-area" style="height: 300px; margin-bottom: 20px;">
+                        <canvas id="widmarkChart"></canvas>
+                    </div>
+
+                    <div class="widmark-item">
+                        <span>예측 최고 <strong>혈중 알콜 농도</strong> (위드마크 기준)</span>
+                        <span class="widmark-val" id="res_peak_bac">0.000 %</span>
+                    </div>
+                    <div class="widmark-item">
+                        <span><strong>음주운전 처벌 기준 (0.03%)</strong> 미달 소요시간</span>
+                        <span class="widmark-val" style="color:#f97316;" id="res_time_003">0시간 0분</span>
+                    </div>
+                    <div class="widmark-item" style="border:none;">
+                        <span><strong>알콜 분해 (0.00%)</strong> 완전 소요시간</span>
+                        <span class="widmark-val" style="color:#10b981;" id="res_time_000">0시간 0분</span>
+                    </div>
+                </div>
+            </div>
         </div>
+    </div>
+
+    <article class="academic-doc">
+        <h2>임상 약동학(Pharmacokinetics) 모델링 수학적 고찰</h2>
+        <p>치료약물농도감시(Therapeutic Drug Monitoring, TDM)는 좁은 치료 지수를 가진 약물의 독성을 예방하기 위한 필수 과정입니다. 본 엔진은 임상 현장의 모든 약동학 모델을 백엔드의 상미분방정식(ODE)으로 구축합니다.</p>
+
+        <h3>1. 1-Compartment Model (1차 속도론)</h3>
+        <p>반코마이신(Vancomycin) 등 체내 약물 농도에 비례하여 소실되는 속도론입니다. 정상상태 농도는 누적 대수 방정식을 따릅니다.</p>
+        <div class="math-block">
+            $$ C_{max,ss} = \frac{Rate}{V_d \cdot K_e} \cdot \left( \frac{1 - e^{-K_e \cdot t_{inf}}}{1 - e^{-K_e \cdot \tau}} \right) $$
+        </div>
+
+        <h3>2. 2-Compartment Model (2차 속도론)</h3>
+        <p>디고신(Digoxin)처럼 중심 구획과 말초 구획 간의 분포기($\alpha$)와 소실기($\beta$)를 연립 미분방정식으로 구현합니다.</p>
+        <div class="math-block">
+            $$ \frac{dX_c}{dt} = Rate - k_{10}X_c - k_{12}X_c + k_{21}X_p $$
+            $$ \frac{dX_p}{dt} = k_{12}X_c - k_{21}X_p $$
+        </div>
+
+        <h3>3. Non-Linear Michaelis-Menten Kinetics (비선형 속도론)</h3>
+        <p>페니토인(Phenytoin)처럼 대사 효소가 포화되는 특성입니다. 고정 반감기 대신 아래의 비선형 미분방정식을 적분합니다.</p>
+        <div class="math-block">
+            $$ \frac{dC}{dt} = \frac{Rate_{in}}{V_d} - \frac{V_{max} \cdot C}{V_d \cdot (K_m + C)} $$
+        </div>
+
+        <h3>4. Zero-Order Elimination & Widmark Formula (0차 속도론과 알콜 대사)</h3>
+        <p>알코올은 체내 농도와 무관하게 시간당 고정된 양이 배설되는 <strong>순수 0차 속도론(Zero-Order Kinetics)</strong>의 대표적 예시입니다. 회식 후 <strong>술 깨는 시간</strong>이 얼마나 걸릴지, 혹은 아침 출근길에 <strong>음주운전 처벌 기준</strong>에 걸리지 않을지 궁금해할 때 대중적으로 널리 쓰이는 계산법이 바로 <strong>위드마크 공식(Widmark Formula)</strong>입니다. 이 공식은 섭취량과 체중, 성별을 바탕으로 최고 <strong>혈중 알콜 농도(BAC)</strong>를 역추산하고 <strong>알콜 분해 시간</strong>을 도출하는 1-구획 선형 감쇠 방정식입니다.</p>
+        <div class="math-block">
+            $$ BAC(t) = \left( \frac{A \cdot 0.7894}{10 \cdot P \cdot R} \right) - (\beta \cdot t) $$
+        </div>
+        <p>여기서 $A$는 섭취 부피, $P$는 체중, $R$은 위드마크 성별 계수(남 0.86, 여 0.64)이며, $\beta$는 시간당 분해능(평균 0.015%/hr)을 의미합니다.</p>
+        <p>다만, 대중적인 위드마크 공식은 치명적인 수학적 한계를 지닙니다. 술을 마시자마자 혈중 알코올이 즉시 100% 흡수되었다고 '가정'하기 때문입니다. 실제 인체는 경구 섭취 시 위장관에서 혈중으로 서서히 이동하는 <strong>흡수 지연 시간(Absorption delay)</strong>을 겪으며, 이는 아래의 연립 미분방정식에 따라 둥근 궤적을 그리게 됩니다.</p>
+        <div class="math-block">
+            $$ \frac{dC_{abs}}{dt} = -K_a \cdot C_{abs} $$
+            $$ \frac{dC_{blood}}{dt} = K_a \cdot C_{abs} - k_0 \quad (\text{if } C_{blood} > 0) $$
+        </div>
+        <p>상단의 계산기 그래프는 위드마크의 단순한 직선 궤적과, 실제 생리학적 흡수기가 반영된 정밀 0차 약동학 궤적의 차이를 명확하게 대조하여 시각화합니다.</p>
+    </article>
+
+    <div class="reference-section">
+        <h3>References & Clinical Guidelines</h3>
+        <ol>
+            <li><strong>Vancomycin TDM Guideline (2020):</strong> Rybak MJ, Le J, Lodise TP, et al. Therapeutic monitoring of vancomycin for serious methicillin-resistant Staphylococcus aureus infections. <em>Am J Health-Syst Pharm.</em> 2020;77(11):835-864.</li>
+            <li><strong>Pharmacokinetics Foundation:</strong> Bauer LA. <em>Applied Clinical Pharmacokinetics.</em> 3rd ed. McGraw-Hill Education; 2014.</li>
+            <li><strong>Widmark Formula & Alcohol Kinetics:</strong> Widmark EMP. Die theoretischen Grundlagen und die praktische Verwendbarkeit der gerichtlich-medizinischen Alkoholbestimmung. <em>Urban & Schwarzenberg</em>; 1932. (한국 경찰청 음주운전 단속 위드마크 계수 적용)</li>
+        </ol>
     </div>
 </div>
 
 <script>
-    let chart = null;
+    let pkChart = null;
+    let widmarkChart = null;
 
     function updateUI() {
         const type = document.getElementById('model_type').value;
-        const isPheny = type.includes('phenytoin');
-        document.getElementById('thalf').style.display = isPheny ? 'none' : 'block';
-        document.getElementById('thalf_field').style.display = isPheny ? 'none' : 'block';
-        document.getElementById('tinf').style.display = type === '1-comp-iv-bolus' ? 'none' : 'block';
-        document.getElementById('tinf_label').style.display = type === '1-comp-iv-bolus' ? 'none' : 'block';
+        const hideThalf = type.includes('phenytoin') || type === '0-order-elim' || type === '2-comp-iv';
+        const hideTinf = type === '1-comp-iv-bolus';
+
+        document.getElementById('group_thalf').style.display = hideThalf ? 'none' : 'block';
+        document.getElementById('group_tinf').style.display = hideTinf ? 'none' : 'block';
     }
+
+    updateUI();
 
     async function runEngine() {
         const payload = {
@@ -76,41 +246,160 @@
             weight: parseFloat(document.getElementById('weight').value),
             dose: parseFloat(document.getElementById('dose').value),
             tau: parseFloat(document.getElementById('tau').value),
-            tinf: parseFloat(document.getElementById('tinf').value),
-            thalf: parseFloat(document.getElementById('thalf').value),
+            tinf: parseFloat(document.getElementById('tinf').value) || 0,
+            thalf: parseFloat(document.getElementById('thalf').value) || 0,
             num_doses: parseInt(document.getElementById('num_doses').value)
         };
 
-        const response = await fetch('/api/pk/simulate', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(payload)
-        });
-        const res = await response.json();
-        if(res.status === 'success') render(res.data);
+        try {
+            const response = await fetch('/api/pk/simulate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+            const res = await response.json();
+            
+            if(res.status === 'success') {
+                renderPK(res.data);
+            } else {
+                alert("서버 연산 오류: " + res.detail);
+            }
+        } catch (error) {
+            console.error("Fetch Error:", error);
+            alert("백엔드 서버와 통신할 수 없습니다.");
+        }
     }
 
-    function render(data) {
+    function renderPK(data) {
         const ctx = document.getElementById('pkChart').getContext('2d');
-        if(chart) chart.destroy();
-        chart = new Chart(ctx, {
+        if(pkChart) pkChart.destroy();
+        
+        pkChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: data.chart_data.time,
                 datasets: [
-                    {label: 'Conc (mcg/mL)', data: data.chart_data.conc, borderColor: '#2563eb', fill: true, pointRadius: 0},
-                    {label: 'Trough Trace', data: data.chart_data.trough, borderColor: '#10b981', borderDash: [5,5], spanGaps: true}
+                    {
+                        label: 'Concentration', 
+                        data: data.chart_data.conc, 
+                        borderColor: '#2563eb', 
+                        backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                        borderWidth: 2, fill: true, tension: 0.1, pointRadius: 0
+                    },
+                    {
+                        label: 'Trough Trace', 
+                        data: data.chart_data.trough, 
+                        borderColor: '#10b981', 
+                        borderWidth: 2, borderDash: [5,5], spanGaps: true, pointRadius: 4, pointBackgroundColor: '#10b981'
+                    }
                 ]
             },
-            options: { responsive: true, maintainAspectRatio: false }
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: {
+                    x: { title: { display: true, text: 'Time (Hours)' } },
+                    y: { title: { display: true, text: 'Concentration' }, beginAtZero: true }
+                }
+            }
         });
 
         const m = data.metrics;
         document.getElementById('metrics').innerHTML = `
-            <div class="card"><strong>Vd:</strong> ${m.vd} L</div>
-            <div class="card"><strong style="color:red">Peak:</strong> ${m.final_peak}</div>
-            <div class="card"><strong style="color:green">Trough:</strong> ${m.final_trough}</div>
+            <div class="metric-box"><span>Volume of Distribution</span><strong>${m.vd} L</strong></div>
+            <div class="metric-box"><span>Final Peak</span><strong style="color:#ef4444">${m.final_peak}</strong></div>
+            <div class="metric-box"><span>Final Trough</span><strong style="color:#10b981">${m.final_trough}</strong></div>
         `;
+    }
+
+    // 대중용 0차 속도론 및 위드마크 비교 시뮬레이션
+    function calculateWidmark() {
+        const gender = document.getElementById('w_gender').value;
+        const weight = parseFloat(document.getElementById('w_weight').value);
+        const vol = parseFloat(document.getElementById('w_vol').value);
+        const abv = parseFloat(document.getElementById('w_abv').value);
+
+        if (!weight || !vol || !abv) {
+            alert("입력값을 정확히 확인해 주세요.");
+            return;
+        }
+
+        const alcMass = vol * (abv / 100) * 0.7894;
+        const r = (gender === 'M') ? 0.86 : 0.64;
+        const peakBac = alcMass / (weight * r * 10);
+        const beta = 0.015; 
+        
+        let timeToZero = peakBac / beta;
+        let timeToDrive = (peakBac - 0.03) / beta;
+        if (timeToDrive < 0) timeToDrive = 0;
+
+        const maxTime = Math.ceil(timeToZero + 1);
+        const timeLabels = [];
+        const widmarkData = [];
+        const real0OrderData = [];
+        
+        const ka = 3.0; // 가상 흡수 속도 상수
+
+        for (let t = 0; t <= maxTime; t += 0.1) {
+            timeLabels.push(t.toFixed(1));
+            
+            let w_val = peakBac - (beta * t);
+            widmarkData.push(w_val > 0 ? w_val : 0);
+
+            let abs_factor = 1 - Math.exp(-ka * t);
+            let r_val = (peakBac * abs_factor) - (beta * t);
+            real0OrderData.push(r_val > 0 ? r_val : 0);
+        }
+
+        document.getElementById('res_peak_bac').innerText = peakBac.toFixed(3) + " %";
+        document.getElementById('res_time_003').innerText = `${Math.floor(timeToDrive)}시간 ${Math.round((timeToDrive % 1) * 60)}분`;
+        document.getElementById('res_time_000').innerText = `${Math.floor(timeToZero)}시간 ${Math.round((timeToZero % 1) * 60)}분`;
+
+        document.getElementById('widmark-result').style.display = 'block';
+
+        const ctxW = document.getElementById('widmarkChart').getContext('2d');
+        if(widmarkChart) widmarkChart.destroy();
+
+        widmarkChart = new Chart(ctxW, {
+            type: 'line',
+            data: {
+                labels: timeLabels,
+                datasets: [
+                    {
+                        label: '단순 위드마크 궤적 (즉각 흡수 가정)', 
+                        data: widmarkData, 
+                        borderColor: '#ef4444', 
+                        borderDash: [5,5],
+                        borderWidth: 2, fill: false, tension: 0, pointRadius: 0
+                    },
+                    {
+                        label: '실제 약동학 궤적 (위장관 흡수 지연 반영)', 
+                        data: real0OrderData, 
+                        borderColor: '#10b981', 
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 3, fill: true, tension: 0.3, pointRadius: 0
+                    }
+                ]
+            },
+            options: { 
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line', yMin: 0.03, yMax: 0.03,
+                                borderColor: 'orange', borderWidth: 2, borderDash: [2,2],
+                                label: { content: '음주운전 처벌 기준 (0.03%)', enabled: true, position: 'end' }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { title: { display: true, text: '음주 후 경과 시간 (Hours)' } },
+                    y: { title: { display: true, text: '혈중 알콜 농도 (BAC %)' }, beginAtZero: true }
+                }
+            }
+        });
     }
 </script>
 </body>
